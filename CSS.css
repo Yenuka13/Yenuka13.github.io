@@ -1,0 +1,26 @@
+body {
+    font-size: larger;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    background-color: #6459ed;
+}
+
+h3 {
+    font-style: italic;
+    text-align: center;
+    padding-bottom: 0px;
+}
+
+h1 {
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    text-align: center;
+    font-style: normal;
+}
+
+h1.emoji {
+    font-size: 89px;
+}
+
+h4 {
+    font-style: normal;
+    font-family: 'Courier New', Courier, monospace;
+}
