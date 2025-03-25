@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superuser Dashboard - POS System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 900px;
+            margin-top: 50px;
+        }
+        .section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            margin-bottom: 20px;
+        }
+        .product, .discount {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        button {
+            margin-top: 15px;
+        }
+        .logout {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .logout:hover {
+            background-color: #c82333;
+        }
+        .form-control {
+            margin-bottom: 15px; /* Extra padding between input fields */
+        }
+    </style>
+</head>
+<body>
+
+    <button class="logout" onclick="logout()">Logout</button>
+
+    <div class="container">
+        <div class="row">
+            <!-- Add Product Section -->
+            <div class="col-md-6 section">
+                <h2>Add Product</h2>
+                <input type="text" id="product-name" class="form-control" placeholder="Product Name">
+                <input type="text" id="product-barcode" class="form-control" placeholder="Barcode">
+                <input type="number" id="product-price" class="form-control" placeholder="Price">
+                <input type="number" id="product-quantity" class="form-control" placeholder="Quantity">
+                <button class="btn btn-primary w-100" onclick="addProduct()">Add</button>
+            </div>
+
+            <!-- Set Discount Section -->
+            <div class="col-md-6 section">
+                <h2>Set Discount</h2>
+                <input type="text" id="discount-name" class="form-control" placeholder="Discount Name">
+                <input type="number" id="discount-value" class="form-control" placeholder="Discount Value or %">
+                <button class="btn btn-success w-100" onclick="addDiscount()">Add Discount</button>
+            </div>
+        </div>
+
+        <!-- Product List Section -->
+        <div class="section">
+            <h2>Added Products</h2>
+            <div id="products"></div>
+        </div>
+
+        <!-- Discount List Section -->
+        <div class="section">
+            <h2>Created Discounts</h2>
+            <div id="discount-display">No discounts applied.</div>
+        </div>
+    </div>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem("products")) || [];
+        let discounts = JSON.parse(localStorage.getItem("discounts")) || [];
+
+        function renderProducts() {
+            const productContainer = document.getElementById("products");
+            productContainer.innerHTML = "";
+            products.forEach((product, index) => {
+                const productDiv = document.createElement("div");
+                productDiv.classList.add("product");
+                productDiv.innerHTML = `
+                    <span>${product.name} - $${product.price} (Stock: ${product.quantity})</span>
+                    <button class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</button>
+                `;
+                productContainer.appendChild(productDiv);
+            });
+        }
+
+        function addProduct() {
+            const name = document.getElementById("product-name").value;
+            const barcode = document.getElementById("product-barcode").value;
+            const price = document.getElementById("product-price").value;
+            const quantity = document.getElementById("product-quantity").value;
+            if (name && barcode && price && quantity) {
+                products.push({ name, barcode, price, quantity });
+                localStorage.setItem("products", JSON.stringify(products));
+                renderProducts();
+            }
+        }
+
+        function deleteProduct(index) {
+            products.splice(index, 1);
+            localStorage.setItem("products", JSON.stringify(products));
+            renderProducts();
+        }
+
+        function addDiscount() {
+            const discountName = document.getElementById("discount-name").value;
+            const discountValue = document.getElementById("discount-value").value;
+            if (discountName && discountValue) {
+                const newDiscount = { id: new Date().getTime(), name: discountName, value: discountValue };
+                discounts.push(newDiscount);
+                localStorage.setItem("discounts", JSON.stringify(discounts));
+                renderDiscounts();
+                alert("Discount added successfully!");
+            }
+        }
+
+        function deleteDiscount(id) {
+            discounts = discounts.filter(discount => discount.id !== id);
+            localStorage.setItem("discounts", JSON.stringify(discounts));
+            renderDiscounts();
+            alert("Discount removed successfully!");
+        }
+
+        function renderDiscounts() {
+            const discountContainer = document.getElementById("discount-display");
+            if (discounts.length === 0) {
+                discountContainer.innerHTML = "No discounts applied.";
+            } else {
+                discountContainer.innerHTML = "";
+                discounts.forEach(discount => {
+                    const discountDiv = document.createElement("div");
+                    discountDiv.classList.add("discount");
+                    discountDiv.innerHTML = `
+                        <span>${discount.name} - ${discount.value}%</span>
+                        <button class="btn btn-danger btn-sm" onclick="deleteDiscount(${discount.id})">Delete</button>
+                    `;
+                    discountContainer.appendChild(discountDiv);
+                });
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("user");
+            window.location.href = "index.html";
+        }
+
+        renderProducts();
+        renderDiscounts();
+    </script>
+</body>
+</html>

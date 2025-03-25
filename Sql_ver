@@ -1,0 +1,144 @@
+import sqlite3
+
+class POS:
+    def __init__(self):
+        # Initialize the database connection and setup
+        self.conn = sqlite3.connect("pos.db")  # Connect to the database (it will create the database if it doesn't exist)
+        self.cursor = self.conn.cursor()
+        self.create_tables()
+        self.run()
+
+    def create_tables(self):
+        # Create the products and transactions tables if they don't exist
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS products (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                name TEXT, price REAL, stock INTEGER)''')
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS transactions (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                product_id INTEGER, quantity INTEGER, total_price REAL)''')
+        self.conn.commit()
+
+        # Optional: Insert some test products if the table is empty
+        self.cursor.execute("SELECT COUNT(*) FROM products")
+        if self.cursor.fetchone()[0] == 0:
+            self.insert_product("Product A", 10.0, 20)
+            self.insert_product("Product B", 20.0, 30)
+            self.insert_product("Product C", 15.0, 50)
+
+    def load_products(self):
+        # Load products from the database
+        self.cursor.execute("SELECT * FROM products")
+        return self.cursor.fetchall()
+
+    def display_products(self, products):
+        # Display the list of products
+        print("\nAvailable Products:")
+        if len(products) == 0:
+            print("No products available in the database.")
+        for product in products:
+            print(f"{product[0]}. {product[1]} - ${product[2]} (Stock: {product[3]})")
+
+    def add_to_cart(self, cart, products):
+        # Add products to the cart
+        try:
+            product_id = int(input("Enter product ID to add to cart: "))
+            quantity = int(input("Enter quantity: "))
+        except ValueError:
+            print("Invalid input. Please enter integers for product ID and quantity.")
+            return
+
+        # Find the selected product by ID
+        product = next((p for p in products if p[0] == product_id), None)
+        
+        if product:
+            if quantity <= product[3]:
+                total_price = product[2] * quantity
+                cart.append((product[1], quantity, total_price))
+                # Update the stock in the database
+                self.cursor.execute("UPDATE products SET stock = stock - ? WHERE id = ?", (quantity, product[0]))
+                self.conn.commit()
+                print(f"Added {quantity} x {product[1]} to cart. Total: ${total_price}")
+            else:
+                print(f"Not enough stock available! Only {product[3]} items in stock.")
+        else:
+            print("Invalid product ID!")
+
+    def checkout(self, cart):
+        # Calculate the total amount and display it
+        if not cart:
+            print("Your cart is empty. Please add products to your cart first.")
+            return
+        
+        total_amount = sum(item[2] for item in cart)
+        print("\nCheckout:")
+        for item in cart:
+            print(f"{item[0]} x{item[1]} - ${item[2]}")
+        print(f"Total Amount: ${total_amount}")
+        
+        # Record the transaction in the database
+        for item in cart:
+            product = next(p for p in self.load_products() if p[1] == item[0])
+            self.cursor.execute("INSERT INTO transactions (product_id, quantity, total_price) VALUES (?, ?, ?)",
+                                (product[0], item[1], item[2]))
+        self.conn.commit()
+        print("Transaction recorded.")
+        cart.clear()
+
+    def insert_product(self, name, price, stock):
+        # Insert a new product into the database
+        self.cursor.execute("INSERT INTO products (name, price, stock) VALUES (?, ?, ?)", (name, price, stock))
+        self.conn.commit()
+        print(f"Product '{name}' added to the database.")
+
+    def insert_product_with_id(self):
+        # Insert a new product with user-provided product ID
+        try:
+            product_id = int(input("Enter new product ID: "))
+            name = input("Enter new product name: ")
+            price = float(input("Enter new product price: $"))
+            stock = int(input("Enter new product stock: "))
+        except ValueError:
+            print("Invalid input. Please enter valid integers for ID, price, and stock.")
+            return
+        
+        # Insert the product with the provided ID
+        self.cursor.execute("INSERT INTO products (id, name, price, stock) VALUES (?, ?, ?, ?)", 
+                            (product_id, name, price, stock))
+        self.conn.commit()
+        print(f"Product '{name}' with ID {product_id} added to the database.")
+
+    def run(self):
+        cart = []
+        while True:
+            print("\nSelect an option:")
+            print("1. View Products")
+            print("2. Add Product to Cart")
+            print("3. Checkout")
+            print("4. Insert New Product into Database")
+            print("5. Insert New Product with ID into Database")
+            print("6. Exit")
+            action = input("Choose an action: ")
+
+            if action == "1":
+                products = self.load_products()
+                self.display_products(products)
+            elif action == "2":
+                products = self.load_products()
+                self.add_to_cart(cart, products)
+            elif action == "3":
+                self.checkout(cart)
+            elif action == "4":
+                name = input("Enter new product name: ")
+                price = float(input("Enter new product price: $"))
+                stock = int(input("Enter new product stock: "))
+                self.insert_product(name, price, stock)
+            elif action == "5":
+                self.insert_product_with_id()
+            elif action == "6":
+                print("Exiting...")
+                break
+            else:
+                print("Invalid choice! Please try again.")
+
+if __name__ == "__main__":
+    POS()
